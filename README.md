@@ -83,19 +83,28 @@ then prints a **URL and a QR code**:
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8000` | Port the server listens on |
+| `HOST` | `0.0.0.0` | Bind address (use `127.0.0.1` to restrict to localhost) |
 | `PIN` | random 6 digits | Force a specific PIN (otherwise generated once into `.token`) |
 
 ```bash
 PORT=9000 PIN=123456 ./run.sh
 ```
 
+## Security
+
+- **PIN authentication**, checked in constant time, with **per-IP lockout**
+  after repeated failures to slow brute-force.
+- The PIN is sent in the **first WebSocket message** (not in the connection URL),
+  and the WebSocket enforces a **same-origin check** to block cross-site hijacking.
+- The PIN is stored in `.token` (git-ignored). Delete it to rotate it.
+- ⚠️ **No TLS.** Traffic (including keystrokes) travels in cleartext over the LAN.
+  Use it only on a network you trust; do not expose it to the public internet.
+  Put it behind a reverse proxy / VPN (e.g. Tailscale) if you need encryption.
+
 ## Notes & limitations
 
 - **X11 only.** Injection relies on XTEST/`xdotool`, which don't work under
   Wayland. On Wayland you'd need a `ydotool`/uinput-based backend instead.
-- The PIN is stored in `.token` (git-ignored). Delete it to rotate it.
-- This is meant for a trusted home network. It is not hardened for exposure to
-  the public internet.
 
 ## License
 

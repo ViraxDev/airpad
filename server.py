@@ -19,12 +19,14 @@ import select
 import socket
 import subprocess
 import threading
+import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import mss
 from PIL import Image
 
-from fastapi import FastAPI, Response, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -37,15 +39,18 @@ STATIC_DIR = BASE_DIR / "static"
 TOKEN_FILE = BASE_DIR / ".token"
 
 PORT = int(os.environ.get("PORT", "8000"))
+HOST = os.environ.get("HOST", "0.0.0.0")  # 0.0.0.0 = reachable on the LAN
 
 # ---------------------------------------------------------------------------
-# Authentication (6-digit PIN, generated once)
+# Authentication (6-digit PIN, generated once) + brute-force throttling
 # ---------------------------------------------------------------------------
 
 def load_or_create_pin() -> str:
-    forced = os.environ.get("PIN")
+    # An empty/whitespace-only PIN env var is ignored on purpose: it must never
+    # collapse to "" (which would let an empty token authenticate).
+    forced = (os.environ.get("PIN") or "").strip()
     if forced:
-        return forced.strip()
+        return forced
     if TOKEN_FILE.exists():
         pin = TOKEN_FILE.read_text(encoding="utf-8").strip()
         if pin:
@@ -56,6 +61,30 @@ def load_or_create_pin() -> str:
 
 
 PIN = load_or_create_pin()
+
+# Per-IP failed-attempt tracking to slow brute-force of the PIN.
+_AUTH_MAX_FAILS = 8        # failures within the window before a temporary block
+_AUTH_WINDOW = 60.0        # seconds the failure counter spans
+_AUTH_BLOCK = 60.0         # seconds an IP stays blocked after too many failures
+_auth_fails: dict[str, dict] = {}
+
+
+def auth_ok(ip: str, token: str) -> bool:
+    """Constant-time PIN check with per-IP lockout after repeated failures."""
+    now = time.monotonic()
+    rec = _auth_fails.get(ip)
+    if rec and rec["until"] > now:
+        return False  # currently locked out
+    if secrets.compare_digest(token or "", PIN):
+        _auth_fails.pop(ip, None)
+        return True
+    if not rec or now - rec["first"] > _AUTH_WINDOW:
+        rec = {"count": 0, "first": now, "until": 0.0}
+        _auth_fails[ip] = rec
+    rec["count"] += 1
+    if rec["count"] >= _AUTH_MAX_FAILS:
+        rec["until"] = now + _AUTH_BLOCK
+    return False
 
 # ---------------------------------------------------------------------------
 # Injection — mouse via XTEST (fast, persistent), keyboard via xdotool
@@ -362,6 +391,18 @@ def handle_blocking(msg: dict):
 app = FastAPI(title="AirPad")
 
 
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    return resp
+
+
+def _client_ip(scope_client) -> str:
+    return scope_client.host if scope_client else "?"
+
+
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
@@ -393,8 +434,10 @@ def _capture_jpeg(width: int, quality: int) -> bytes:
 
 
 @app.get("/screen.jpg")
-def screen(token: str = "", w: int = 480, q: int = 50):
-    if not secrets.compare_digest(token, PIN):
+def screen(request: Request, token: str = "", w: int = 480, q: int = 50):
+    # token stays in the query string (an <img> can't send headers); it is
+    # rate-limited like the WebSocket and never written to logs (log_level=warning).
+    if not auth_ok(_client_ip(request.client), token):
         return Response(status_code=403)
     try:
         data = _capture_jpeg(w, q)
@@ -404,12 +447,32 @@ def screen(token: str = "", w: int = 480, q: int = 50):
                     headers={"Cache-Control": "no-store"})
 
 
+def _same_origin(websocket: WebSocket) -> bool:
+    """Reject cross-site WebSocket connections (CSWSH). A missing Origin (native
+    clients) is allowed; a present Origin must match the Host we were reached on."""
+    origin = websocket.headers.get("origin")
+    if not origin:
+        return True
+    return urlparse(origin).netloc == websocket.headers.get("host", "")
+
+
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    token = websocket.query_params.get("token", "")
     await websocket.accept()
-    if not secrets.compare_digest(token, PIN):
+    if not _same_origin(websocket):
+        await websocket.close(code=1008)
+        return
+    ip = _client_ip(websocket.client)
+    # First message must authenticate (keeps the PIN out of the connection URL).
+    try:
+        first = json.loads(await websocket.receive_text())
+    except Exception:
+        await websocket.close(code=1008)
+        return
+    token = first.get("token", "") if first.get("t") == "auth" else ""
+    if not auth_ok(ip, token):
         await websocket.send_text(json.dumps({"t": "auth", "ok": False}))
+        await asyncio.sleep(0.4)  # slow down credential stuffing
         await websocket.close(code=1008)
         return
     await websocket.send_text(json.dumps({"t": "auth", "ok": True}))
@@ -473,4 +536,4 @@ if __name__ == "__main__":
     import uvicorn
 
     banner()
-    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="warning")
+    uvicorn.run(app, host=HOST, port=PORT, log_level="warning")

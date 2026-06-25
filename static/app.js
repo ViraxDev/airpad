@@ -43,7 +43,10 @@
     if (!token) return showPin();
     const proto = location.protocol === "https:" ? "wss" : "ws";
     setStatus(false, "Connexion…");
-    ws = new WebSocket(`${proto}://${location.host}/ws?token=${encodeURIComponent(token)}`);
+    ws = new WebSocket(`${proto}://${location.host}/ws`);
+
+    // authenticate via the first message (keeps the PIN out of the URL)
+    ws.onopen = () => ws.send(JSON.stringify({ t: "auth", token }));
 
     ws.onmessage = (e) => {
       let m; try { m = JSON.parse(e.data); } catch { return; }
