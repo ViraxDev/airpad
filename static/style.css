@@ -1,0 +1,413 @@
+:root {
+  --bg: #000000;
+  --panel: rgba(255, 255, 255, 0.08);
+  --panel-strong: rgba(255, 255, 255, 0.14);
+  --stroke: rgba(255, 255, 255, 0.12);
+  --text: #f5f5f7;
+  --text-dim: rgba(235, 235, 245, 0.6);
+  --accent: #0a84ff;
+  --green: #30d158;
+  --red: #ff453a;
+  --radius: 22px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+body {
+  /* subtle iOS-like radial gradient */
+  background:
+    radial-gradient(120% 80% at 50% -10%, #1c1c1e 0%, #000 60%);
+}
+
+.hidden { display: none !important; }
+
+/* Shared surface for every UI button (each component only keeps its own
+   sizes/shapes/states on top). */
+.icon-btn, .click-btn, .special-bar button, .dock-btn, .media-grid button,
+.pin-pad button, .vol-mute, .text-btn, .dpad button, .remote-row button {
+  border: 1px solid var(--stroke);
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* ----------------------------------------------------------------- App */
+.app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding:
+    calc(var(--safe-t) + 6px)
+    calc(var(--safe-r) + 12px)
+    calc(var(--safe-b) + 10px)
+    calc(var(--safe-l) + 12px);
+  gap: 12px;
+}
+
+/* ------------------------------------------------------------ Statusbar */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.status-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 8px currentColor;
+  transition: background .25s, color .25s;
+  color: var(--red);
+}
+.status-dot.ok { background: var(--green); color: var(--green); }
+.status-text { color: var(--text-dim); font-weight: 500; flex: 0 1 auto; }
+.icon-btn {
+  margin-left: auto;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  font-size: 17px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ------------------------------------------------------------- Trackpad */
+.trackpad {
+  position: relative;
+  flex: 1 1 auto;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    var(--panel);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  overflow: hidden;
+  touch-action: none;
+  transition: background .15s, box-shadow .15s;
+}
+.trackpad.active {
+  background:
+    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    var(--panel-strong);
+  box-shadow: inset 0 0 0 1.5px rgba(10,132,255,.4);
+}
+.pad-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--text-dim);
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.pad-hint-title { font-size: 22px; font-weight: 700; color: rgba(255,255,255,.35); letter-spacing: .5px; }
+.pad-hint-line { font-size: 13px; }
+.pad-hint.fade { opacity: 0; }
+
+/* ------------------------------------------------------------ Click bar */
+.clickbar {
+  display: flex;
+  gap: 12px;
+  height: 60px;
+  flex: 0 0 auto;
+}
+.click-btn {
+  flex: 1;
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform .08s, background .12s;
+}
+.click-left { flex: 1.8; }
+.click-btn:active { transform: scale(.97); background: var(--panel-strong); }
+
+/* --------------------------------------------------------- Special bar */
+.special-bar {
+  display: flex;
+  gap: 7px;
+  flex: 0 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.special-bar::-webkit-scrollbar { display: none; }
+.special-bar button {
+  flex: 1 0 auto;
+  min-width: 46px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.special-bar button:active { background: var(--panel-strong); }
+.special-bar button.mod-on { background: var(--accent); border-color: var(--accent); }
+
+/* ---------------------------------------------------------------- Dock */
+.dock {
+  display: flex;
+  gap: 12px;
+  height: 58px;
+  flex: 0 0 auto;
+}
+.dock-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 18px;
+  font-size: 11px;
+  font-weight: 600;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform .08s, background .12s;
+}
+.dock-btn:active { transform: scale(.97); background: var(--panel-strong); }
+.dock-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dock-ico { font-size: 20px; line-height: 1; }
+
+/* ------------------------------------------------------- Hidden input */
+.hidden-input {
+  position: fixed;
+  opacity: 0;
+  height: 1px; width: 1px;
+  bottom: 0; left: 0;
+  border: 0; padding: 0;
+  font-size: 16px; /* prevents iOS auto-zoom */
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- Sheets */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+}
+.sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  background: rgba(28,28,30,.82);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  border-top: 1px solid var(--stroke);
+  padding: 10px 18px calc(var(--safe-b) + 22px);
+  animation: sheetUp .28s cubic-bezier(.22,.9,.3,1);
+}
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-grip {
+  width: 38px; height: 5px; border-radius: 3px;
+  background: rgba(255,255,255,.3);
+  margin: 2px auto 14px;
+}
+.sheet-title { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 14px; }
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.media-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 78px;
+  border-radius: 18px;
+  font-size: 26px;
+}
+.media-grid button span { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.media-grid button:active { background: var(--panel-strong); transform: scale(.96); }
+.media-wide { grid-column: 1 / -1; flex-direction: row !important; gap: 10px !important; height: 56px !important; font-size: 20px !important; }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 2px;
+  font-size: 16px;
+  border-bottom: 1px solid var(--stroke);
+}
+.setting-row input[type=range] { width: 55%; accent-color: var(--accent); }
+.setting-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+.setting-reset {
+  width: 100%;
+  margin-top: 18px;
+  height: 50px;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,69,58,.16);
+  color: var(--red);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------- PIN screen */
+.pin-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-t) + 8vh) 24px calc(var(--safe-b) + 24px);
+}
+.pin-logo { font-size: 52px; margin-bottom: 6px; }
+.pin-title { font-size: 30px; font-weight: 700; margin: 0; }
+.pin-sub { color: var(--text-dim); font-size: 15px; margin: 8px 0 26px; text-align: center; }
+.pin-dots { display: flex; gap: 16px; margin-bottom: 10px; }
+.pin-dots span {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.5);
+  transition: background .15s, transform .15s;
+}
+.pin-dots span.filled { background: var(--text); border-color: var(--text); transform: scale(1.05); }
+.pin-error { color: var(--red); font-size: 14px; height: 20px; margin-bottom: 14px; font-weight: 500; }
+.pin-screen.shake .pin-dots { animation: shake .4s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-9px); }
+  40%,80% { transform: translateX(9px); }
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 78px);
+  gap: 20px;
+  margin-top: auto;
+}
+.pin-pad button {
+  width: 78px; height: 78px;
+  border-radius: 50%;
+  font-size: 30px;
+  font-weight: 400;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform .08s, background .1s;
+}
+.pin-pad button:active { background: var(--panel-strong); transform: scale(.94); }
+.pin-blank { visibility: hidden; }
+.pin-del { font-size: 24px !important; background: transparent !important; border-color: transparent !important; }
+
+/* -------------------------------------------------------- Screen preview */
+.screen-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  pointer-events: none; /* the trackpad stays active on top */
+  z-index: 1;
+}
+
+/* --------------------------------------------------------- Volume */
+.vol-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.vol-row input[type=range] { flex: 1; accent-color: var(--accent); height: 28px; }
+.vol-mute {
+  width: 46px; height: 46px; border-radius: 50%;
+  font-size: 20px; flex: 0 0 auto;
+}
+.vol-mute.muted { background: rgba(255,69,58,.18); border-color: var(--red); }
+.vol-pct { width: 46px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-dim); font-weight: 600; }
+
+/* --------------------------------------------------------- Text */
+.text-area {
+  width: 100%;
+  min-height: 110px;
+  border-radius: 16px;
+  border: 1px solid var(--stroke);
+  background: rgba(0,0,0,.25);
+  color: var(--text);
+  font-size: 17px;
+  padding: 14px;
+  resize: none;
+  margin-bottom: 12px;
+}
+.text-btn {
+  width: 100%;
+  height: 50px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.text-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.text-btn:active { transform: scale(.98); filter: brightness(1.1); }
+.text-row { display: flex; gap: 12px; margin-top: 12px; }
+.text-row .text-btn { flex: 1; }
+
+/* --------------------------------------------------------- D-pad */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  width: min(260px, 75vw);
+  aspect-ratio: 1;
+  margin: 4px auto 18px;
+}
+.dpad button {
+  border-radius: 16px;
+  font-size: 22px;
+  font-weight: 600;
+}
+.dpad button:active { background: var(--accent); transform: scale(.95); }
+.dpad-up { grid-area: 1 / 2; }
+.dpad-left { grid-area: 2 / 1; }
+.dpad-ok { grid-area: 2 / 2; background: var(--panel-strong) !important; font-size: 17px !important; border-radius: 50% !important; }
+.dpad-right { grid-area: 2 / 3; }
+.dpad-down { grid-area: 3 / 2; }
+
+.remote-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.remote-row button {
+  flex: 1;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.remote-row button:active { background: var(--panel-strong); }
+
+/* --------------------------------------------------------- System */
+.sys-danger { color: var(--red) !important; }
+.sys-danger:active { background: rgba(255,69,58,.18) !important; }
+.sys-note { color: var(--text-dim); font-size: 13px; text-align: center; margin-top: 14px; }

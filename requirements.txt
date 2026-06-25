@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-xlib>=0.33
+qrcode>=7.4
+mss>=9.0
+Pillow>=10.0

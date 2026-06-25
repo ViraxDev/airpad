@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# AirPad runtime secret (generated PIN)
+.token
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

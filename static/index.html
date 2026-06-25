@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-title" content="AirPad">
+<title>AirPad</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- PIN entry screen -->
+<div id="pinScreen" class="pin-screen">
+  <div class="pin-logo">📱</div>
+  <h1 class="pin-title">AirPad</h1>
+  <p class="pin-sub">Entre le code PIN affiché sur le PC</p>
+  <div class="pin-dots" id="pinDots">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad">
+    <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+    <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+    <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+    <button class="pin-blank"></button><button data-d="0">0</button>
+    <button id="pinDel" class="pin-del">⌫</button>
+  </div>
+</div>
+
+<!-- Application -->
+<div id="app" class="app hidden">
+  <header class="statusbar">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">Connexion…</span>
+    <button class="icon-btn" id="btnSettings" data-open-sheet="settings" aria-label="Réglages">⚙︎</button>
+  </header>
+
+  <main class="trackpad" id="pad">
+    <img class="screen-preview hidden" id="screenImg" alt="">
+    <div class="pad-hint" id="padHint">
+      <div class="pad-hint-title">Trackpad</div>
+      <div class="pad-hint-line">1 doigt&nbsp;: bouger &nbsp;•&nbsp; tap&nbsp;: clic</div>
+      <div class="pad-hint-line">2 doigts&nbsp;: défiler &nbsp;•&nbsp; 2-tap&nbsp;: clic droit</div>
+      <div class="pad-hint-line">double-tap + glisser&nbsp;: déplacer (drag)</div>
+    </div>
+  </main>
+
+  <section class="clickbar">
+    <button class="click-btn click-left" id="btnLeft">Clic gauche</button>
+    <button class="click-btn click-right" id="btnRight">Clic droit</button>
+  </section>
+
+  <!-- Special keys bar (shown with the keyboard) -->
+  <div class="special-bar hidden" id="specialBar">
+    <button data-special="esc">esc</button>
+    <button data-special="tab">tab</button>
+    <button id="ctrlToggle" data-mod="ctrl">ctrl</button>
+    <button data-special="left">◀</button>
+    <button data-special="up">▲</button>
+    <button data-special="down">▼</button>
+    <button data-special="right">▶</button>
+  </div>
+
+  <nav class="dock">
+    <button class="dock-btn" id="btnKeyboard"><span class="dock-ico">⌨</span><span>Clavier</span></button>
+    <button class="dock-btn" id="btnScreen"><span class="dock-ico">🖥</span><span>Écran</span></button>
+    <button class="dock-btn" id="btnMedia" data-open-sheet="media"><span class="dock-ico">⏯</span><span>Média</span></button>
+    <button class="dock-btn" id="btnMore" data-open-sheet="more"><span class="dock-ico">⋯</span><span>Plus</span></button>
+  </nav>
+
+  <!-- Hidden field to summon the native keyboard -->
+  <textarea id="kbd" class="hidden-input" autocomplete="off" autocorrect="off"
+            autocapitalize="off" spellcheck="false" inputmode="text"></textarea>
+</div>
+
+<!-- Media sheet -->
+<div class="sheet-backdrop hidden" id="mediaBackdrop"></div>
+<div class="sheet hidden" id="mediaSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Volume</div>
+  <div class="vol-row">
+    <button class="vol-mute" id="volMute">🔊</button>
+    <input type="range" id="volSlider" min="0" max="100" step="1" value="50">
+    <span class="vol-pct" id="volPct">50%</span>
+  </div>
+  <div class="sheet-title" style="margin-top:18px">Média</div>
+  <div class="media-grid">
+    <button data-media="voldown">🔉<span>Vol −</span></button>
+    <button data-media="mute">🔇<span>Muet</span></button>
+    <button data-media="volup">🔊<span>Vol +</span></button>
+    <button data-media="prev">⏮<span>Précéd.</span></button>
+    <button data-media="playpause">⏯<span>Lecture</span></button>
+    <button data-media="next">⏭<span>Suivant</span></button>
+    <button data-media="fullscreen" class="media-wide">⛶<span>Plein écran (F11)</span></button>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet-backdrop hidden" id="settingsBackdrop"></div>
+<div class="sheet hidden" id="settingsSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Réglages</div>
+  <label class="setting-row">
+    <span>Sensibilité</span>
+    <input type="range" id="sens" min="0.6" max="3" step="0.1" value="1.6">
+  </label>
+  <label class="setting-row">
+    <span>Défilement naturel</span>
+    <input type="checkbox" id="natural" checked>
+  </label>
+  <label class="setting-row">
+    <span>Retour haptique</span>
+    <input type="checkbox" id="haptics" checked>
+  </label>
+  <button class="setting-reset" id="btnForget">Oublier ce PIN</button>
+</div>
+
+<!-- "More" sheet (menu) -->
+<div class="sheet-backdrop hidden" id="moreBackdrop"></div>
+<div class="sheet hidden" id="moreSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Plus</div>
+  <div class="media-grid">
+    <button data-open-sheet="text">📋<span>Texte</span></button>
+    <button data-open-sheet="remote">🎮<span>Télécommande</span></button>
+    <button data-open-sheet="system">⏻<span>Système</span></button>
+  </div>
+</div>
+
+<!-- Text / clipboard sheet -->
+<div class="sheet-backdrop hidden" id="textBackdrop"></div>
+<div class="sheet hidden" id="textSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Texte &amp; presse-papiers</div>
+  <textarea id="textArea" class="text-area" placeholder="Tape ou colle ton texte ici…"
+            autocapitalize="sentences" spellcheck="false"></textarea>
+  <button class="text-btn primary" id="textSend">⌨︎ Taper sur le PC</button>
+  <div class="text-row">
+    <button class="text-btn" id="clipPush">→ Presse-papiers PC</button>
+    <button class="text-btn" id="clipPull">← Lire le PC</button>
+  </div>
+</div>
+
+<!-- Remote sheet (D-pad) -->
+<div class="sheet-backdrop hidden" id="remoteBackdrop"></div>
+<div class="sheet hidden" id="remoteSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Télécommande</div>
+  <div class="dpad">
+    <button class="dpad-up" data-special="up">▲</button>
+    <button class="dpad-left" data-special="left">◀</button>
+    <button class="dpad-ok" data-special="enter">OK</button>
+    <button class="dpad-right" data-special="right">▶</button>
+    <button class="dpad-down" data-special="down">▼</button>
+  </div>
+  <div class="remote-row">
+    <button data-special="esc">⤺ Retour</button>
+    <button data-media="playpause">⏯ Lecture</button>
+    <button data-special="space">␣ Espace</button>
+  </div>
+  <div class="remote-row">
+    <button data-media="voldown">🔉 Vol −</button>
+    <button data-media="mute">🔇 Muet</button>
+    <button data-media="volup">🔊 Vol +</button>
+  </div>
+</div>
+
+<!-- System sheet -->
+<div class="sheet-backdrop hidden" id="systemBackdrop"></div>
+<div class="sheet hidden" id="systemSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title">Système</div>
+  <div class="media-grid">
+    <button data-sys="lock" class="sys-safe">🔒<span>Verrouiller</span></button>
+    <button data-sys="suspend" class="sys-safe">🌙<span>Veille</span></button>
+    <button data-sys="reboot" class="sys-danger">🔄<span>Redémarrer</span></button>
+    <button data-sys="poweroff" class="sys-danger">⏻<span>Éteindre</span></button>
+  </div>
+  <div class="sys-note">Les actions rouges demandent une confirmation.</div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
